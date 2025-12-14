@@ -20,7 +20,7 @@ const allowedOrigins = [
   'https://matify-frontend.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://www.goyalbookdepot.com',
+  'https://www.goyalbookdepot.com/',
   'http://localhost:5175',
   'http://localhost:3000',
 ]
@@ -57,6 +57,7 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => console.log('🚀 Server started on PORT : ' + port))
+
 
 
 
