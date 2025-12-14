@@ -14,20 +14,33 @@ const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
-// ✅ Secure & controlled CORS setup
+const allowedOrigins = [
+  'https://goyalbookdepot-frontend.vercel.app',
+  'https://gbd-admin.vercel.app',
+  'https://matify-frontend.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:3000',
+]
+
 app.use(cors({
-  origin: [
-    'https://matify-frontend.vercel.app',
-    'http://localhost:5173',
-     'http://localhost:5174',
-      'http://localhost:5175',
-    'http://localhost:3000',
-    'https://gbd-admin.vercel.app',
-  
-  ],
+  origin: function (origin, callback) {
+    // allow requests with no origin (Postman, mobile apps)
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS ❌'))
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
 }))
+
+// VERY IMPORTANT — handle preflight
+app.options('*', cors())
 
 // Middlewares
 app.use(express.json())
@@ -43,6 +56,7 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => console.log('🚀 Server started on PORT : ' + port))
+
 
 
 
