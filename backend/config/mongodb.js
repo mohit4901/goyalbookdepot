@@ -16,12 +16,16 @@ const connectDB = async () => {
             return;
         }
 
-        if (!uri.includes('/e-commerce')) {
+        // Database name where existing products/orders/users are stored (defaults to 'test')
+        const dbName = process.env.DB_NAME || 'test';
+
+        const match = uri.match(/^mongodb(\+srv)?:\/\/[^/]+\/([^?]+)/);
+        if (!match || !match[2]) {
             if (uri.includes('?')) {
                 const [base, query] = uri.split('?');
-                uri = `${base.replace(/\/+$/, '')}/e-commerce?${query}`;
+                uri = `${base.replace(/\/+$/, '')}/${dbName}?${query}`;
             } else {
-                uri = `${uri.replace(/\/+$/, '')}/e-commerce`;
+                uri = `${uri.replace(/\/+$/, '')}/${dbName}`;
             }
         }
 
