@@ -17,31 +17,49 @@ connectCloudinary()
 const allowedOrigins = [
   'https://goyalbookdepot-frontend.vercel.app',
   'https://gbd-admin.vercel.app',
-  'https://matify-frontend.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:5174',
+
   'https://www.goyalbookdepot.com',
-  'http://localhost:5175',
-  'http://localhost:3000',
+  'https://goyalbookdepot.com',
 ]
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (Postman, mobile apps)
+    // Allow requests with no origin (Postman, mobile apps, curl)
     if (!origin) return callback(null, true)
 
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS ❌'))
+    // Check exact allowed origins
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+
+    // Allow all localhost origins (any port)
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin) || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
+      return callback(null, true)
     }
+
+    // Allow all Vercel domains (production and preview deployments)
+    if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
+      return callback(null, true)
+    }
+
+    // Allow Render domains
+    if (/^https:\/\/.*\.onrender\.com$/.test(origin)) {
+      return callback(null, true)
+    }
+
+    // Allow any subdomain of goyalbookdepot.com
+    if (/^https:\/\/([a-zA-Z0-9-]+\.)?goyalbookdepot\.com$/.test(origin)) {
+      return callback(null, true)
+    }
+
+    // Reject without throwing a 500 error
+    callback(null, false)
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-}))
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'Accept'],
+}
 
-// VERY IMPORTANT — handle preflight
-app.options('*', cors())
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 
 // Middlewares
 app.use(express.json())
