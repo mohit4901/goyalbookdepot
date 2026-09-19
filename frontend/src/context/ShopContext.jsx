@@ -15,13 +15,20 @@ const ShopContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({});
     const [products, setProducts] = useState([]);
     const [token, setToken] = useState('')
+    const [cartPopup, setCartPopup] = useState({ isOpen: false, product: null, size: '' })
     const navigate = useNavigate();
 
 
     const addToCart = async (itemId, size) => {
+        // Enforce login first
+        if (!token) {
+            toast.warn('Please login or signup first to add items to your cart');
+            navigate('/login');
+            return;
+        }
 
         if (!size) {
-            toast.error('Select Product Size');
+            toast.error('Please select a product size');
             return;
         }
 
@@ -41,17 +48,18 @@ const ShopContextProvider = (props) => {
         }
         setCartItems(cartData);
 
-        if (token) {
-            try {
-
-                await axios.post(backendUrl + '/api/cart/add', { itemId, size }, { headers: { token } })
-
-            } catch (error) {
-                console.log(error)
-                toast.error(error.message)
-            }
+        try {
+            await axios.post(backendUrl + '/api/cart/add', { itemId, size }, { headers: { token } });
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message);
         }
 
+        // Open confirmation popup
+        const productInfo = products.find((item) => item._id === itemId);
+        if (productInfo) {
+            setCartPopup({ isOpen: true, product: productInfo, size });
+        }
     }
 
     const getCartCount = () => {
@@ -154,7 +162,8 @@ const ShopContextProvider = (props) => {
     const value = {
         products, currency, delivery_fee,
         search, setSearch, showSearch, setShowSearch,
-        cartItems, addToCart,setCartItems,
+        cartItems, addToCart, setCartItems,
+        cartPopup, setCartPopup,
         getCartCount, updateQuantity,
         getCartAmount, navigate, backendUrl,
         setToken, token
