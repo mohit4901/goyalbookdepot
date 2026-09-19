@@ -3,6 +3,9 @@ import { useParams } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
 import { assets } from '../assets/assets'
 
+const fallbackBookSvg =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="380" viewBox="0 0 300 380" fill="%23f8fafc"><rect width="300" height="380" fill="%23f1f5f9"/><rect x="40" y="40" width="220" height="300" rx="8" fill="%23e2e8f0" stroke="%23cbd5e1" stroke-width="3"/><path d="M70 100h160M70 140h160M70 180h100" stroke="%2394a3b8" stroke-width="4" stroke-linecap="round"/><text x="150" y="260" text-anchor="middle" fill="%2364748b" font-family="sans-serif" font-size="13" font-weight="600">GOYAL BOOK DEPOT</text></svg>'
+
 const Product = () => {
 
   const { productId } = useParams()
@@ -16,7 +19,7 @@ const Product = () => {
     products.forEach((item) => {
       if (item._id === productId) {
         setProductData(item)
-        setImage(item.image[0])
+        setImage(item.image && item.image[0] ? item.image[0] : fallbackBookSvg)
       }
     })
   }
@@ -44,19 +47,39 @@ const Product = () => {
                 src={item}
                 alt=""
                 onClick={() => setImage(item)}
-                className="w-[24%] sm:w-full sm:mb-3 cursor-pointer"
+                onError={(e) => {
+                  e.target.src = fallbackBookSvg
+                }}
+                className={`w-[24%] sm:w-full sm:mb-3 cursor-pointer rounded-lg border object-cover h-20 ${
+                  image === item ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-gray-200'
+                }`}
               />
             ))}
           </div>
 
-          <div className="w-full sm:w-[80%]">
-            <img src={image} alt="" className="w-full h-auto" />
+          <div className="w-full sm:w-[80%] bg-gray-50 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center min-h-[350px]">
+            <img
+              src={image || fallbackBookSvg}
+              alt={productData.name}
+              className="w-full h-auto max-h-[500px] object-contain"
+              onError={(e) => {
+                e.target.src = fallbackBookSvg
+              }}
+            />
           </div>
         </div>
 
         {/* -------- Info -------- */}
         <div className="flex-1">
           <h1 className="text-2xl font-medium mt-2">{productData.name}</h1>
+
+          {productData.caption && (
+            <div className="mt-2">
+              <span className="inline-block bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                🏷️ {productData.caption}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center gap-1 mt-2">
             <img src={assets.star_icon} className="w-3" />

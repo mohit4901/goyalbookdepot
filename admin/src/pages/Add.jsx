@@ -1,151 +1,245 @@
-import{ useState } from 'react'
-import {assets} from '../assets/assets'
-import axios from 'axios'
-import { backendUrl } from '../App'
-import { toast } from 'react-toastify'
+import React, { useState } from 'react';
+import axios from 'axios';
+import { backendUrl } from '../App';
+import { toast } from 'react-toastify';
+import ImageDropzone from '../components/ImageDropzone';
 
-const Add = ({token}) => {
+const Add = ({ token }) => {
+  const [images, setImages] = useState([]);
+  const [name, setName] = useState('');
+  const [caption, setCaption] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('Stationary');
+  const [subCategory, setSubCategory] = useState('Ncert Books');
+  const [bestseller, setBestseller] = useState(false);
+  const [sizes, setSizes] = useState(['FreeSize']);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [image1,setImage1] = useState(false)
-  const [image2,setImage2] = useState(false)
-  const [image3,setImage3] = useState(false)
-  const [image4,setImage4] = useState(false)
+  const availableSizes = ['FreeSize', 'S', 'M', 'L', 'XL', 'Standard'];
 
-   const [name, setName] = useState("");
-   const [description, setDescription] = useState("");
-   const [price, setPrice] = useState("");
-   const [category, setCategory] = useState("Stationary", "Gift Items");
-   const [subCategory, setSubCategory] = useState("Mats");
-   const [bestseller, setBestseller] = useState(false);
-   const [sizes, setSizes] = useState([]);
+  const toggleSize = (size) => {
+    setSizes((prev) =>
+      prev.includes(size) ? prev.filter((item) => item !== size) : [...prev, size]
+    );
+  };
 
-   const onSubmitHandler = async (e) => {
+  const onSubmitHandler = async (e) => {
     e.preventDefault();
 
+    if (images.length === 0) {
+      toast.error('Please upload at least one product image');
+      return;
+    }
+
+    if (!price || Number(price) <= 0) {
+      toast.error('Please enter a valid price');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      
-      const formData = new FormData()
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('caption', caption);
+      formData.append('description', description);
+      formData.append('price', price);
+      formData.append('category', category);
+      formData.append('subCategory', subCategory);
+      formData.append('bestseller', bestseller);
+      formData.append('sizes', JSON.stringify(sizes));
 
-      formData.append("name",name)
-      formData.append("description",description)
-      formData.append("price",price)
-      formData.append("category",category)
-      formData.append("subCategory",subCategory)
-      formData.append("bestseller",bestseller)
-      formData.append("sizes",JSON.stringify(sizes))
+      images.forEach((imgObj, index) => {
+        formData.append(`image${index + 1}`, imgObj.file);
+      });
 
-      image1 && formData.append("image1",image1)
-      image2 && formData.append("image2",image2)
-      image3 && formData.append("image3",image3)
-      image4 && formData.append("image4",image4)
-
-      const response = await axios.post(backendUrl + "/api/product/add",formData,{headers:{token}})
+      const response = await axios.post(`${backendUrl}/api/product/add`, formData, {
+        headers: { token }
+      });
 
       if (response.data.success) {
-        toast.success(response.data.message)
-        setName('')
-        setDescription('')
-        setImage1(false)
-        setImage2(false)
-        setImage3(false)
-        setImage4(false)
-        setPrice('')
+        toast.success(response.data.message || 'Product Added Successfully!');
+        // Reset form
+        setName('');
+        setCaption('');
+        setDescription('');
+        setPrice('');
+        setImages([]);
+        setBestseller(false);
+        setSizes(['FreeSize']);
       } else {
-        toast.error(response.data.message)
+        toast.error(response.data.message || 'Failed to add product');
       }
-
     } catch (error) {
-      console.log(error);
-      toast.error(error.message)
+      console.error(error);
+      toast.error(error.response?.data?.message || error.message || 'Error adding product');
+    } finally {
+      setIsSubmitting(false);
     }
-   }
+  };
 
   return (
-    <form onSubmit={onSubmitHandler} className='flex flex-col w-full items-start gap-3'>
-        <div>
-          <p className='mb-2'>Upload Image</p>
+    <div className="w-full max-w-4xl space-y-6">
+      <div className="pb-3 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-800">Add New Product</h1>
+        <p className="text-xs text-gray-500">
+          Upload images with drag & drop, client-side auto-compression, and custom captions.
+        </p>
+      </div>
 
-          <div className='flex gap-2'>
-            <label htmlFor="image1">
-              <img className='w-20' src={!image1 ? assets.upload_area : URL.createObjectURL(image1)} alt="" />
-              <input onChange={(e)=>setImage1(e.target.files[0])} type="file" id="image1" hidden/>
+      <form
+        onSubmit={onSubmitHandler}
+        className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6"
+      >
+        {/* Drag and Drop Image Uploader */}
+        <ImageDropzone images={images} setImages={setImages} maxImages={4} />
+
+        {/* Product Name */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Product Name / Book Title *
+          </label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Class 10 NCERT Science Textbook"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+          />
+        </div>
+
+        {/* Product Caption */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-700">
+              Product Caption / Promotional Badge (Shows on frontend cards)
             </label>
-            <label htmlFor="image2">
-              <img className='w-20' src={!image2 ? assets.upload_area : URL.createObjectURL(image2)} alt="" />
-              <input onChange={(e)=>setImage2(e.target.files[0])} type="file" id="image2" hidden/>
-            </label>
-            <label htmlFor="image3">
-              <img className='w-20' src={!image3 ? assets.upload_area : URL.createObjectURL(image3)} alt="" />
-              <input onChange={(e)=>setImage3(e.target.files[0])} type="file" id="image3" hidden/>
-            </label>
-            <label htmlFor="image4">
-              <img className='w-20' src={!image4 ? assets.upload_area : URL.createObjectURL(image4)} alt="" />
-              <input onChange={(e)=>setImage4(e.target.files[0])} type="file" id="image4" hidden/>
-            </label>
+            <span className="text-[11px] text-indigo-600 font-medium">Optional</span>
+          </div>
+          <input
+            type="text"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="e.g. 2026 Edition, NCERT Original, Best Value Pack"
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+          />
+        </div>
+
+        {/* Product Description */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            Product Description *
+          </label>
+          <textarea
+            required
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Write complete product details, edition, author, or publisher info..."
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+          />
+        </div>
+
+        {/* Category, SubCategory & Price */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Stationary">Stationary</option>
+              <option value="Gift Items">Gift Items</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Sub Category</label>
+            <select
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="Ncert Books">Ncert Books</option>
+              <option value="Other Books">Other Books</option>
+              <option value="Stationary Items">Stationary Items</option>
+              <option value="Notebooks">Notebooks</option>
+              <option value="Gift Items">Gift Items</option>
+              <option value="School Bags">School Bags</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Price (Rs.) *</label>
+            <input
+              type="number"
+              min="1"
+              required
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="e.g. 150"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg font-bold text-gray-800 focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
         </div>
 
-        <div className='w-full'>
-          <p className='mb-2'>Product name</p>
-          <input onChange={(e)=>setName(e.target.value)} value={name} className='w-full max-w-[500px] px-3 py-2' type="text" placeholder='Type here' required/>
-        </div>
-
-        <div className='w-full'>
-          <p className='mb-2'>Product description</p>
-          <textarea onChange={(e)=>setDescription(e.target.value)} value={description} className='w-full max-w-[500px] px-3 py-2' type="text" placeholder='Write content here' required/>
-        </div>
-
-        <div className='flex flex-col sm:flex-row gap-2 w-full sm:gap-8'>
-
-            <div>
-              <p className='mb-2'>Product category</p>
-              <select onChange={(e) => setCategory(e.target.value)} className='w-full px-3 py-2'>
-                  <option value="Stationary">Stationary</option>
-                  <option value="Gift Items">Gift Items</option>
-                 
-              </select>
-            </div>
-
-            <div>
-              <p className='mb-2'>Sub category</p>
-              <select onChange={(e) => setSubCategory(e.target.value)} className='w-full px-3 py-2'>
-                  <option value="Ncert Books">Ncert Books</option>
-                  <option value="Other Books">Other Books</option>
-                  <option value="Stationary Items">Stationary Items</option>
-                  <option value="Notebooks">Notebooks</option>
-                  <option value="Gift Items">Gift Items</option>
-                  <option value="School Bags">School Bags</option>
-                 
-              </select>
-            </div>
-
-            <div>
-              <p className='mb-2'>Product Price</p>
-              <input onChange={(e) => setPrice(e.target.value)} value={price} className='w-full px-3 py-2 sm:w-[120px]' type="Number" placeholder='25' />
-            </div>
-
-        </div>
-
+        {/* Sizes */}
         <div>
-          <p className='mb-2'>Product Sizes</p>
-          <div className='flex gap-3'>
-           
-
-            <div onClick={()=>setSizes(prev => prev.includes("FreeSize") ? prev.filter( item => item !== "FreeSize") : [...prev,"FreeSize"])}>
-              <p className={`${sizes.includes("FreeSize") ? "bg-pink-100" : "bg-slate-200" } px-3 py-1 cursor-pointer`}>FreeSize</p>
-            </div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Product Sizes</label>
+          <div className="flex flex-wrap gap-2">
+            {availableSizes.map((sz) => (
+              <button
+                type="button"
+                key={sz}
+                onClick={() => toggleSize(sz)}
+                className={`px-3.5 py-1.5 text-xs rounded-md border font-medium transition-colors ${
+                  sizes.includes(sz)
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                }`}
+              >
+                {sz}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className='flex gap-2 mt-2'>
-          <input onChange={() => setBestseller(prev => !prev)} checked={bestseller} type="checkbox" id='bestseller' />
-          <label className='cursor-pointer' htmlFor="bestseller">Add to bestseller</label>
+        {/* Bestseller */}
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="add-bestseller"
+            checked={bestseller}
+            onChange={(e) => setBestseller(e.target.checked)}
+            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+          />
+          <label htmlFor="add-bestseller" className="text-xs font-medium text-gray-700 cursor-pointer">
+            Mark as Bestseller ⭐
+          </label>
         </div>
 
-        <button type="submit" className='w-28 py-3 mt-4 bg-black text-white'>ADD</button>
+        {/* Submit Button */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-8 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Adding Product...
+              </>
+            ) : (
+              'Add Product'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
-    </form>
-  )
-}
-
-export default Add
+export default Add;
